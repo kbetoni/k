@@ -611,7 +611,7 @@ def relatorio_analitico_fornecedores(df_final, col_requisitado):
             if eficiencia == ef_max:
                 rel.append(f"✔️ Maior eficiência ({eficiencia}%).")
             elif eficiencia > 0:
-                rel.append(f"Eficiência: {eficiencia}% (menor que a máxima: {ef_max}%). **Considere o impacto no consumo energético da planta.**")
+                rel.append(f"⚠️ Eficiência: {eficiencia}% (menor que a máxima: {ef_max}%). **Considere o impacto no consumo energético da planta.**")
             else:
                 rel.append("⚠️ Eficiência não informada. **A eficiência influencia diretamente o custo operacional.**")
 
@@ -892,6 +892,8 @@ def main():
         dfs_fornecedores = []
         nomes_fornecedores = []
         nome_arquivo_requisitado = None
+
+        # Processa cada arquivo e extrai os DataFrames
         for file in uploaded_files:
             nome_arquivo = file.name.replace(".pdf", "")
             texto_extraido = extrair_texto_pdf(file)
@@ -905,39 +907,40 @@ def main():
                     nome_arquivo_requisitado = nome_arquivo
 
         if dfs_fornecedores:
-            df_final = pd.concat(dfs_fornecedores, axis=1)
-            df_final = df_final.reset_index()
+            # Monta a tabela com seções agrupadas e colunas ordenadas
+            df_final = pd.concat(dfs_fornecedores, axis=1).reset_index()
+            df_final = montar_tabela_com_secoes_multifornecedor(df_final)
+
+            # Define o nome da coluna de requisitos (ou usa o primeiro arquivo, se não houver)
+            col_requisitado = nome_arquivo_requisitado or nomes_fornecedores[0]
+
+            # Adiciona as colunas de atendimento dos proponentes
+            df_final = checar_atendimento(df_final, col_requisitado=col_requisitado)
+
+            # Ordena as colunas conforme o modelo antigo
+            # Monta dinamicamente os nomes das propostas e de atendimento
+            nomes_prop = [n for n in nomes_fornecedores if n != col_requisitado]
+            colunas_ordem = (
+                ['Descrição', 'Unidade', col_requisitado] +
+                nomes_prop +
+                [f"Atendimento {n}" for n in nomes_prop]
+            )
+            # Mantém só as colunas presentes (para evitar erro se faltar alguma)
+            df_final = df_final[[col for col in colunas_ordem if col in df_final.columns]]
+
+            # Mostra no app
             st.dataframe(df_final)
 
-            st.subheader("Baixe a tabela Excel final:")
+            # Salva em Excel formatado
             nome_arquivo_excel = "dados_extraidos.xlsx"
-            with pd.ExcelWriter(nome_arquivo_excel, engine="openpyxl") as writer:
-                df_final.to_excel(writer, index=False, sheet_name="Dados")
-                workbook = writer.book
-                worksheet = writer.sheets["Dados"]
-                secoes = [
-                    "DADOS DO FLUIDO", "CONDIÇÕES DE OPERAÇÃO E DESEMPENHO",
-                    "CARACTERÍSTICAS CONSTRUTIVAS", "MATERIAL DE CONSTRUÇÃO",
-                    "TRANSMISSÃO", "MOTOR ELÉTRICO", "PESOS", "FINANCEIRO"
-                ]
-                for row in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row, min_col=1, max_col=3):
-                    cell = row[0]
-                    if cell.value in secoes:
-                        worksheet.merge_cells(start_row=cell.row, start_column=1, end_row=cell.row, end_column=3)
-                        cell.font = Font(bold=True)
-                        cell.alignment = Alignment(horizontal="center", vertical="center")
+            salvar_em_excel_formatado(df_final, nome_arquivo_excel)
             with open(nome_arquivo_excel, "rb") as f:
                 st.download_button("Baixar Excel formatado", data=f, file_name=nome_arquivo_excel)
 
             # ===== Relatório Analítico =====
             st.subheader("Relatório Analítico Técnico")
-            if not nome_arquivo_requisitado:
-                nome_arquivo_requisitado = nomes_fornecedores[0]  # fallback
-
-            col_requisitado = nome_arquivo_requisitado
             if st.button("Gerar Relatório Analítico"):
-                df_final2 = checar_atendimento(df_final, col_requisitado=col_requisitado)
-                relatorios, desclassificados, pre_selecionados = relatorio_analitico_fornecedores(df_final2, col_requisitado)
+                relatorios, desclassificados, pre_selecionados = relatorio_analitico_fornecedores(df_final, col_requisitado)
                 for f, pontos in relatorios.items():
                     st.markdown(f"**Fornecedor: {f}**")
                     for p in pontos:
@@ -954,6 +957,7 @@ def main():
                 if pre_selecionados:
                     st.info("**Pré-selecionados:** " + ", ".join(pre_selecionados))
 
+                # Download do relatório em txt
                 with tempfile.NamedTemporaryFile("w+", delete=False, suffix=".txt", encoding="utf-8") as temp_file:
                     salvar_relatorio_txt(relatorios, desclassificados, pre_selecionados, filename=temp_file.name)
                     temp_file.seek(0)

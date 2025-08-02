@@ -876,7 +876,7 @@ def salvar_relatorio_txt(relatorios, desclassificados, pre_selecionados, filenam
 
 # =================== APP PRINCIPAL ===================
 def main():
-    st.title("Análise Inteligente de Propostas de Bombas")
+    st.title("Inteligência Artificial Aplicada à Análise Técnica de Propostas de Bombas Hidráulicas")
     st.write("Faça upload dos PDFs de propostas e receba a planilha comparativa com relatório analítico.")
 
     openai_key = st.sidebar.text_input("API Key da OpenAI (gpt-4)", type="password")

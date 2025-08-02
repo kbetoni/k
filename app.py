@@ -207,7 +207,7 @@ O texto extraído do PDF é:
 
 def analisar_texto_com_openai(texto_extraido):
     try:
-        resposta_parte1 = openai.ChatCompletion.create(
+        resposta_parte1 = openai.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "Você é um assistente técnico especializado em análise de propostas de bombas."},
@@ -216,7 +216,7 @@ def analisar_texto_com_openai(texto_extraido):
             max_tokens=800,
             temperature=0
         )
-        resposta_parte2 = openai.ChatCompletion.create(
+        resposta_parte2 = openai.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "Você é um assistente técnico especializado em análise de propostas de bombas."},
@@ -225,7 +225,7 @@ def analisar_texto_com_openai(texto_extraido):
             max_tokens=800,
             temperature=0
         )
-        resposta_parte3 = openai.ChatCompletion.create(
+        resposta_parte3 = openai.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "Você é um assistente técnico especializado em análise de propostas de bombas."},
@@ -234,7 +234,7 @@ def analisar_texto_com_openai(texto_extraido):
             max_tokens=800,
             temperature=0
         )
-        resposta_parte4 = openai.ChatCompletion.create(
+        resposta_parte4 = openai.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "Você é um assistente técnico especializado em análise de propostas de bombas."},
